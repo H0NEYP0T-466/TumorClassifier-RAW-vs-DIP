@@ -6,7 +6,6 @@ import numpy as np
 import cv2
 import joblib
 from pathlib import Path
-from io import BytesIO
 
 from App.Utils.logger import logger
 
