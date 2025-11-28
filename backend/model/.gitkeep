@@ -1,3 +1,0 @@
-# This folder stores the trained model files
-# model.pkl - Linear SVM model
-# scaler.pkl - StandardScaler for feature normalization
