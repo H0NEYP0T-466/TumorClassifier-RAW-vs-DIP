@@ -8,14 +8,35 @@ import {
   ChevronRight, 
   Zap,
   Binary,
+  X,
+  AlertCircle,
+  CheckCircle,
   type LucideIcon
 } from 'lucide-react';
+
+// API base URL - adjust if your backend runs on a different port
+const API_BASE_URL = 'http://localhost:8888';
+
+interface PredictionResult {
+  success: boolean;
+  prediction: number;
+  class_name: string;
+  message: string;
+}
 
 const LandingPage: React.FC = () => {
   // State for image preview URL
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // State for the actual file (for upload)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   // State for drag-and-drop visual feedback
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  // State for loading during prediction
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  // State for prediction result
+  const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
+  // State for error message
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // Reference to the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -25,6 +46,10 @@ const LandingPage: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedImage(URL.createObjectURL(file));
+      setSelectedFile(file);
+      // Clear previous results
+      setPredictionResult(null);
+      setErrorMessage(null);
     }
   };
 
@@ -45,6 +70,10 @@ const LandingPage: React.FC = () => {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       setSelectedImage(URL.createObjectURL(file));
+      setSelectedFile(file);
+      // Clear previous results
+      setPredictionResult(null);
+      setErrorMessage(null);
     }
   };
 
@@ -52,18 +81,53 @@ const LandingPage: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleAnalyze = () => {
-    if (!selectedImage) return;
-    console.log("Analyze clicked - Logic for DIP/SVM goes here");
-    // This is where you will add your logic later
+  const handleAnalyze = async () => {
+    if (!selectedFile) return;
+    
+    setIsLoading(true);
+    setPredictionResult(null);
+    setErrorMessage(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      
+      const response = await fetch(`${API_BASE_URL}/api/v1/predict`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Prediction failed');
+      }
+      
+      const result: PredictionResult = await response.json();
+      setPredictionResult(result);
+      console.log('Prediction result:', result);
+      
+    } catch (error) {
+      console.error('Prediction error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'An error occurred during prediction');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const resetImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedImage(null);
+    setSelectedFile(null);
+    setPredictionResult(null);
+    setErrorMessage(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const dismissResult = () => {
+    setPredictionResult(null);
+    setErrorMessage(null);
   };
 
   return (
@@ -203,14 +267,26 @@ const LandingPage: React.FC = () => {
               {selectedImage ? (
                 <button 
                   onClick={handleAnalyze}
-                  className="w-full group relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transform active:scale-[0.98]"
+                  disabled={isLoading}
+                  className={`w-full group relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transform active:scale-[0.98] ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center justify-center gap-2 relative z-10">
-                    <Zap size={20} className="fill-white" />
-                    <span>Run Diagnostic Analysis</span>
+                    {isLoading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Analyzing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap size={20} className="fill-white" />
+                        <span>Run Diagnostic Analysis</span>
+                      </>
+                    )}
                   </div>
                   {/* Shine Animation Effect */}
-                  <div className="absolute top-0 -left-full w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[25deg] group-hover:animate-shine" />
+                  {!isLoading && (
+                    <div className="absolute top-0 -left-full w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[25deg] group-hover:animate-shine" />
+                  )}
                 </button>
               ) : (
                 <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
@@ -226,6 +302,60 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Toggle Message for Prediction Result */}
+      {(predictionResult || errorMessage) && (
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+          <div 
+            className={`
+              flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border
+              ${predictionResult?.prediction === 1 
+                ? 'bg-red-900/80 border-red-500/50 text-red-100' 
+                : predictionResult?.prediction === 0
+                  ? 'bg-emerald-900/80 border-emerald-500/50 text-emerald-100'
+                  : 'bg-red-900/80 border-red-500/50 text-red-100'
+              }
+            `}
+          >
+            {/* Icon */}
+            <div className={`
+              w-12 h-12 rounded-full flex items-center justify-center
+              ${predictionResult?.prediction === 1 
+                ? 'bg-red-500/30' 
+                : predictionResult?.prediction === 0
+                  ? 'bg-emerald-500/30'
+                  : 'bg-red-500/30'
+              }
+            `}>
+              {errorMessage ? (
+                <AlertCircle size={24} />
+              ) : predictionResult?.prediction === 1 ? (
+                <AlertCircle size={24} />
+              ) : (
+                <CheckCircle size={24} />
+              )}
+            </div>
+
+            {/* Message Content */}
+            <div className="flex flex-col">
+              <span className="font-bold text-lg">
+                {errorMessage ? 'Error' : predictionResult?.class_name}
+              </span>
+              <span className="text-sm opacity-80">
+                {errorMessage || predictionResult?.message}
+              </span>
+            </div>
+
+            {/* Dismiss Button */}
+            <button 
+              onClick={dismissResult}
+              className="ml-4 p-2 rounded-full hover:bg-white/10 transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Inline Styles for Custom Shine Animation */}
       <style>{`
@@ -234,6 +364,19 @@ const LandingPage: React.FC = () => {
         }
         .animate-shine {
           animation: shine 0.75s;
+        }
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
         }
       `}</style>
     </div>
