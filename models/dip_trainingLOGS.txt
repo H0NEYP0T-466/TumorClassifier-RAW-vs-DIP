@@ -1,0 +1,55 @@
+(venv) X:\file\FAST_API\TumorClassifier-RAW-vs-DIP\backend>python -m Model.DipDataModel
+20:37:00 | INFO     | 💻 Starting DIP model training...
+20:37:00 | INFO     | ============================================================
+20:37:00 | INFO     | 🧠 STARTING DIP PIPELINE TRAINING (LINEAR SVM + PCA + PREPROCESSING)
+20:37:00 | INFO     | ============================================================
+20:37:00 | INFO     |
+📂 STEP 1: Loading Dataset with DIP Preprocessing
+20:37:00 | INFO     | ----------------------------------------
+20:37:00 | INFO     | Loading TRAINING dataset with DIP preprocessing...
+20:37:00 | INFO     |   Looking in: X:\file\FAST_API\TumorClassifier-RAW-vs-DIP\backend\Dataset\Training
+20:37:55 | INFO     |   Loaded 4117 preprocessed images from tumor/ (label=1)
+20:38:52 | INFO     |   Loaded 4152 preprocessed images from no_tumor/ (label=0)
+20:38:52 | INFO     |   Total: 8269 images | Tumor: 4117 | No Tumor: 4152
+20:38:52 | INFO     | Loading TESTING dataset with DIP preprocessing...
+20:38:52 | INFO     |   Looking in: X:\file\FAST_API\TumorClassifier-RAW-vs-DIP\backend\Dataset\Testing
+20:39:04 | INFO     |   Loaded 906 preprocessed images from tumor/ (label=1)
+20:39:15 | INFO     |   Loaded 910 preprocessed images from no_tumor/ (label=0)
+20:39:15 | INFO     |   Total: 1816 images | Tumor: 906 | No Tumor: 910
+20:39:15 | INFO     |
+  Training set shape: (8269, 64, 64)
+20:39:15 | INFO     |   Testing set shape: (1816, 64, 64)
+20:39:15 | INFO     |
+🔧 STEP 2: Flattening and Scaling Features
+20:39:15 | INFO     | ----------------------------------------
+20:39:16 | INFO     |
+🌀 STEP 3: Applying PCA (256 components)
+20:39:16 | INFO     | ----------------------------------------
+20:39:23 | INFO     |   Training features shape after PCA: (8269, 256)
+20:39:23 | INFO     |   Testing features shape after PCA: (1816, 256)
+20:39:23 | INFO     |
+🚀 STEP 4: Training LinearSVC Model
+20:39:23 | INFO     | ----------------------------------------
+iter  1 act 6.182e+03 pre 5.963e+03 delta 9.325e-02 f 8.269e+03 |g| 2.551e+05 CG   3
+cg reaches trust region boundary
+iter  2 act 7.736e+02 pre 6.807e+02 delta 1.094e-01 f 2.087e+03 |g| 2.689e+04 CG   5
+cg reaches trust region boundary
+iter  3 act 2.951e+02 pre 2.496e+02 delta 1.355e-01 f 1.313e+03 |g| 1.256e+04 CG   8
+iter  4 act 1.137e+02 pre 9.473e+01 delta 1.373e-01 f 1.018e+03 |g| 6.996e+03 CG  10
+iter  5 act 3.517e+01 pre 3.010e+01 delta 1.373e-01 f 9.045e+02 |g| 2.983e+03 CG  14
+iter  6 act 7.574e+00 pre 7.137e+00 delta 1.373e-01 f 8.694e+02 |g| 1.005e+03 CG  19
+iter  7 act 4.304e-01 pre 4.276e-01 delta 1.373e-01 f 8.618e+02 |g| 2.289e+02 CG  20
+iter  8 act 1.318e-02 pre 1.312e-02 delta 1.373e-01 f 8.614e+02 |g| 2.605e+01 CG  24
+[LibLinear]20:39:24 | INFO     |   ✅ Training completed in 143.73 seconds
+20:39:24 | INFO     |
+📊 STEP 5: Evaluating Model
+20:39:24 | INFO     |
+  📈 RESULTS ON TEST SET:
+20:39:24 | INFO     |   ──────────────────────────────
+20:39:24 | INFO     |   Accuracy: 95.43%
+20:39:24 | INFO     |   Precision: 96.92%
+20:39:24 | INFO     |   Recall: 93.82%
+20:39:24 | INFO     |   F1 Score: 95.34%
+20:39:24 | INFO     |   ✅ Model saved to: X:\file\FAST_API\TumorClassifier-RAW-vs-DIP\models\dip_svm_model.pkl
+20:39:24 | INFO     |   ✅ Metrics saved to: X:\file\FAST_API\TumorClassifier-RAW-vs-DIP\models\dip_metrics.pkl
+20:39:24 | INFO     | 💖 Training Result: {'success': True, 'metrics': {'accuracy': 0.9543, 'precision': 0.9692, 'recall': 0.9382, 'sensitivity': 0.9382, 'specificity': 0.9703, 'f1_score': 0.9534, 'confusion_matrix': {'true_negatives': 883, 'false_positives': 27, 'false_negatives': 56, 'true_positives': 850}, 'classification_report': {'No Tumor': {'precision': 0.9403620873269436, 'recall': 0.9703296703296703, 'f1-score': 0.955110870740941, 'support': 910.0}, 'Tumor': {'precision': 0.9692132269099202, 'recall': 0.9381898454746137, 'f1-score': 0.9534492428491307, 'support': 906.0}, 'accuracy': 0.954295154185022, 'macro avg': {'precision': 0.9547876571184319, 'recall': 0.954259757902142, 'f1-score': 0.9542800567950358, 'support': 1816.0}, 'weighted avg': {'precision': 0.9547558827356312, 'recall': 0.954295154185022, 'f1-score': 0.954281886781701, 'support': 1816.0}}, 'training_time_seconds': 143.73}, 'model_path': 'X:\\file\\FAST_API\\TumorClassifier-RAW-vs-DIP\\models\\dip_svm_model.pkl'}
