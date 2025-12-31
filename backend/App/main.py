@@ -52,8 +52,9 @@ def load_models():
 
 def encode_image_to_base64(image: np.ndarray) -> str:
     """Convert numpy image array to base64 encoded string."""
-    _, buffer = cv2.imencode('.png', image)
-    return base64.b64encode(buffer).decode('utf-8')
+    # Import from preprocessing module to avoid duplication
+    from App.Utils.preprocessing import encode_image_to_base64 as _encode
+    return _encode(image)
 
 
 @asynccontextmanager
@@ -276,7 +277,10 @@ async def predict_compare(file: UploadFile = File(...)):
     # Check if at least one model is loaded
     if raw_model_data is None and dip_model_data is None:
         logger.error("❌ Prediction failed: No models loaded")
-        raise HTTPException(status_code=503, detail="No models loaded. Please ensure at least one model is trained and loaded.")
+        raise HTTPException(
+            status_code=503, 
+            detail="No models loaded. Both RAW and DIP models are unavailable. Please ensure at least one model is trained and loaded."
+        )
     
     try:
         # Read the uploaded file

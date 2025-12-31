@@ -492,10 +492,10 @@ const LandingPage: React.FC = () => {
                               className="w-full h-full object-contain"
                             />
                           </div>
-                          <p className="text-xs text-orange-300 mt-2 text-center font-medium max-w-32">
+                          <p className="text-xs text-orange-300 mt-2 text-center font-medium w-32">
                             Step {step.step_number}
                           </p>
-                          <p className="text-xs text-slate-500 text-center max-w-32 leading-tight">
+                          <p className="text-xs text-slate-500 text-center w-32 leading-tight break-words">
                             {step.step_name}
                           </p>
                         </div>
