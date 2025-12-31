@@ -11,17 +11,32 @@ import {
   X,
   AlertCircle,
   CheckCircle,
+  ArrowRight,
   type LucideIcon
 } from 'lucide-react';
 
 // API base URL - adjust if your backend runs on a different port
 const API_BASE_URL = 'http://localhost:8888';
 
-interface PredictionResult {
-  success: boolean;
+interface PreprocessingStep {
+  step_number: number;
+  step_name: string;
+  image_base64: string;
+}
+
+interface ModelPrediction {
   prediction: number;
   class_name: string;
   message: string;
+  input_image_base64: string;
+}
+
+interface ComparisonResult {
+  success: boolean;
+  original_image_base64: string;
+  raw_model: ModelPrediction | null;
+  dip_model: ModelPrediction | null;
+  preprocessing_steps: PreprocessingStep[];
 }
 
 const LandingPage: React.FC = () => {
@@ -33,10 +48,12 @@ const LandingPage: React.FC = () => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   // State for loading during prediction
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  // State for prediction result
-  const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
+  // State for comparison result
+  const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null);
   // State for error message
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // State for showing results panel
+  const [showResults, setShowResults] = useState<boolean>(false);
   // Reference to the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,8 +65,9 @@ const LandingPage: React.FC = () => {
       setSelectedImage(URL.createObjectURL(file));
       setSelectedFile(file);
       // Clear previous results
-      setPredictionResult(null);
+      setComparisonResult(null);
       setErrorMessage(null);
+      setShowResults(false);
     }
   };
 
@@ -72,8 +90,9 @@ const LandingPage: React.FC = () => {
       setSelectedImage(URL.createObjectURL(file));
       setSelectedFile(file);
       // Clear previous results
-      setPredictionResult(null);
+      setComparisonResult(null);
       setErrorMessage(null);
+      setShowResults(false);
     }
   };
 
@@ -85,14 +104,14 @@ const LandingPage: React.FC = () => {
     if (!selectedFile) return;
     
     setIsLoading(true);
-    setPredictionResult(null);
+    setComparisonResult(null);
     setErrorMessage(null);
     
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
       
-      const response = await fetch(`${API_BASE_URL}/api/v1/predict`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/predict/compare`, {
         method: 'POST',
         body: formData,
       });
@@ -102,9 +121,10 @@ const LandingPage: React.FC = () => {
         throw new Error(errorData.detail || 'Prediction failed');
       }
       
-      const result: PredictionResult = await response.json();
-      setPredictionResult(result);
-      console.log('Prediction result:', result);
+      const result: ComparisonResult = await response.json();
+      setComparisonResult(result);
+      setShowResults(true);
+      console.log('Comparison result:', result);
       
     } catch (error) {
       console.error('Prediction error:', error);
@@ -118,16 +138,16 @@ const LandingPage: React.FC = () => {
     e.stopPropagation();
     setSelectedImage(null);
     setSelectedFile(null);
-    setPredictionResult(null);
+    setComparisonResult(null);
     setErrorMessage(null);
+    setShowResults(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const dismissResult = () => {
-    setPredictionResult(null);
-    setErrorMessage(null);
+  const closeResults = () => {
+    setShowResults(false);
   };
 
   return (
@@ -304,51 +324,204 @@ const LandingPage: React.FC = () => {
       </div>
 
       {/* Toggle Message for Prediction Result */}
-      {(predictionResult || errorMessage) && (
-        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
-          <div 
-            className={`
-              flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border
-              ${predictionResult?.prediction === 1 
-                ? 'bg-red-900/80 border-red-500/50 text-red-100' 
-                : predictionResult?.prediction === 0
-                  ? 'bg-emerald-900/80 border-emerald-500/50 text-emerald-100'
-                  : 'bg-red-900/80 border-red-500/50 text-red-100'
-              }
-            `}
-          >
-            {/* Icon */}
-            <div className={`
-              w-12 h-12 rounded-full flex items-center justify-center
-              ${predictionResult?.prediction === 1 
-                ? 'bg-red-500/30' 
-                : predictionResult?.prediction === 0
-                  ? 'bg-emerald-500/30'
-                  : 'bg-red-500/30'
-              }
-            `}>
-              {errorMessage ? (
-                <AlertCircle size={24} />
-              ) : predictionResult?.prediction === 1 ? (
-                <AlertCircle size={24} />
-              ) : (
-                <CheckCircle size={24} />
+      {showResults && comparisonResult && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
+          <div className="bg-[#0f1623] border border-slate-700/50 rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto relative">
+            {/* Close Button */}
+            <button 
+              onClick={closeResults}
+              className="absolute top-4 right-4 bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-full transition-colors border border-slate-600 z-50"
+            >
+              <X size={20} />
+            </button>
+            
+            {/* Header */}
+            <div className="p-6 border-b border-slate-700/50">
+              <h2 className="text-2xl font-bold text-white">Analysis Results</h2>
+              <p className="text-slate-400 mt-1">Comparing RAW vs DIP (Preprocessed) Model Predictions</p>
+            </div>
+
+            {/* Results Content */}
+            <div className="p-6 space-y-8">
+              {/* Model Comparison Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* RAW Model Result */}
+                <div className={`p-6 rounded-2xl border-2 ${
+                  comparisonResult.raw_model?.prediction === 1 
+                    ? 'bg-red-950/30 border-red-500/50' 
+                    : comparisonResult.raw_model?.prediction === 0
+                      ? 'bg-emerald-950/30 border-emerald-500/50'
+                      : 'bg-slate-800/50 border-slate-600/50'
+                }`}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-cyan-500/20 rounded-lg">
+                      <Binary size={20} className="text-cyan-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">RAW Model</h3>
+                      <p className="text-xs text-slate-400">Direct image input (no preprocessing)</p>
+                    </div>
+                  </div>
+                  
+                  {comparisonResult.raw_model ? (
+                    <>
+                      <div className="mb-4">
+                        <img 
+                          src={`data:image/png;base64,${comparisonResult.raw_model.input_image_base64}`}
+                          alt="RAW Model Input"
+                          className="w-full h-40 object-contain rounded-lg bg-slate-900"
+                        />
+                        <p className="text-xs text-slate-500 mt-2 text-center">Input to Model</p>
+                      </div>
+                      <div className={`flex items-center gap-3 p-4 rounded-xl ${
+                        comparisonResult.raw_model.prediction === 1 
+                          ? 'bg-red-500/20' 
+                          : 'bg-emerald-500/20'
+                      }`}>
+                        {comparisonResult.raw_model.prediction === 1 ? (
+                          <AlertCircle className="text-red-400" size={24} />
+                        ) : (
+                          <CheckCircle className="text-emerald-400" size={24} />
+                        )}
+                        <div>
+                          <p className={`font-bold text-lg ${
+                            comparisonResult.raw_model.prediction === 1 ? 'text-red-300' : 'text-emerald-300'
+                          }`}>
+                            {comparisonResult.raw_model.class_name}
+                          </p>
+                          <p className="text-sm text-slate-400">{comparisonResult.raw_model.message}</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-slate-500">
+                      <p>RAW Model not available</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* DIP Model Result */}
+                <div className={`p-6 rounded-2xl border-2 ${
+                  comparisonResult.dip_model?.prediction === 1 
+                    ? 'bg-red-950/30 border-red-500/50' 
+                    : comparisonResult.dip_model?.prediction === 0
+                      ? 'bg-emerald-950/30 border-emerald-500/50'
+                      : 'bg-slate-800/50 border-slate-600/50'
+                }`}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-orange-500/20 rounded-lg">
+                      <Activity size={20} className="text-orange-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">DIP Model</h3>
+                      <p className="text-xs text-slate-400">Digital Image Processing pipeline</p>
+                    </div>
+                  </div>
+                  
+                  {comparisonResult.dip_model ? (
+                    <>
+                      <div className="mb-4">
+                        <img 
+                          src={`data:image/png;base64,${comparisonResult.dip_model.input_image_base64}`}
+                          alt="DIP Model Input"
+                          className="w-full h-40 object-contain rounded-lg bg-slate-900"
+                        />
+                        <p className="text-xs text-slate-500 mt-2 text-center">Preprocessed Image to Model</p>
+                      </div>
+                      <div className={`flex items-center gap-3 p-4 rounded-xl ${
+                        comparisonResult.dip_model.prediction === 1 
+                          ? 'bg-red-500/20' 
+                          : 'bg-emerald-500/20'
+                      }`}>
+                        {comparisonResult.dip_model.prediction === 1 ? (
+                          <AlertCircle className="text-red-400" size={24} />
+                        ) : (
+                          <CheckCircle className="text-emerald-400" size={24} />
+                        )}
+                        <div>
+                          <p className={`font-bold text-lg ${
+                            comparisonResult.dip_model.prediction === 1 ? 'text-red-300' : 'text-emerald-300'
+                          }`}>
+                            {comparisonResult.dip_model.class_name}
+                          </p>
+                          <p className="text-sm text-slate-400">{comparisonResult.dip_model.message}</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-slate-500">
+                      <p>DIP Model not available</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Preprocessing Steps Visualization */}
+              {comparisonResult.preprocessing_steps && comparisonResult.preprocessing_steps.length > 0 && (
+                <div className="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/50">
+                  <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                    <Scan size={20} className="text-orange-400" />
+                    DIP Preprocessing Pipeline
+                  </h3>
+                  <p className="text-sm text-slate-400 mb-6">
+                    These preprocessing steps are applied to enhance the image before feeding to the DIP model
+                  </p>
+                  
+                  <div className="flex flex-wrap items-center justify-start gap-4">
+                    {/* Original Image */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-32 h-32 rounded-lg overflow-hidden border-2 border-slate-600 bg-slate-900">
+                        <img 
+                          src={`data:image/png;base64,${comparisonResult.original_image_base64}`}
+                          alt="Original"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-400 mt-2 text-center font-medium">Original</p>
+                    </div>
+                    
+                    {/* Preprocessing Steps */}
+                    {comparisonResult.preprocessing_steps.map((step) => (
+                      <React.Fragment key={step.step_number}>
+                        <ArrowRight size={20} className="text-slate-500 flex-shrink-0" />
+                        <div className="flex flex-col items-center">
+                          <div className="w-32 h-32 rounded-lg overflow-hidden border-2 border-orange-500/30 bg-slate-900">
+                            <img 
+                              src={`data:image/png;base64,${step.image_base64}`}
+                              alt={step.step_name}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          <p className="text-xs text-orange-300 mt-2 text-center font-medium max-w-32">
+                            Step {step.step_number}
+                          </p>
+                          <p className="text-xs text-slate-500 text-center max-w-32 leading-tight">
+                            {step.step_name}
+                          </p>
+                        </div>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Message Content */}
-            <div className="flex flex-col">
-              <span className="font-bold text-lg">
-                {errorMessage ? 'Error' : predictionResult?.class_name}
-              </span>
-              <span className="text-sm opacity-80">
-                {errorMessage || predictionResult?.message}
-              </span>
+      {/* Error Message Toast */}
+      {errorMessage && (
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+          <div className="flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border bg-red-900/80 border-red-500/50 text-red-100">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-500/30">
+              <AlertCircle size={24} />
             </div>
-
-            {/* Dismiss Button */}
+            <div className="flex flex-col">
+              <span className="font-bold text-lg">Error</span>
+              <span className="text-sm opacity-80">{errorMessage}</span>
+            </div>
             <button 
-              onClick={dismissResult}
+              onClick={() => setErrorMessage(null)}
               className="ml-4 p-2 rounded-full hover:bg-white/10 transition-colors"
             >
               <X size={20} />
@@ -377,6 +550,17 @@ const LandingPage: React.FC = () => {
         }
         .animate-slide-up {
           animation: slide-up 0.3s ease-out;
+        }
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
         }
       `}</style>
     </div>
