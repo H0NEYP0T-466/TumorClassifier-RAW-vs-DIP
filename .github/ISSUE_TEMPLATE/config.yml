@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Discussions"
+    url: "https://github.com/H0NEYP0T-466/TumorClassifier-RAW-vs-DIP/discussions"
+    about: "Ask questions or start a discussion."
+  - name: "Security Reporting"
+    url: "https://github.com/H0NEYP0T-466/TumorClassifier-RAW-vs-DIP/security/policy"
+    about: "Report security vulnerabilities responsibly."
+  - name: "Q&A"
+    url: "https://github.com/H0NEYP0T-466/TumorClassifier-RAW-vs-DIP/discussions/categories/q-a"
+    about: "Get help or ask questions about the project."
