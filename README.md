@@ -661,46 +661,6 @@ VITE_API_URL=http://localhost:8000  # Development
 
 ---
 
-## 📸 Screenshots & Visualizations
-
-### Landing Page
-*[Placeholder: Add screenshot of main interface with upload section]*
-
-**Features:**
-- Clean, modern UI with TailwindCSS
-- Drag-and-drop image upload
-- Instant MRI scan preview
-- Model selection (RAW vs DIP comparison)
-
-### Prediction Results - RAW Pipeline
-*[Placeholder: Add screenshot of RAW pipeline results]*
-
-**Shows:**
-- Tumor classification (Tumor/No Tumor)
-- Confidence score
-- Minimal preprocessing (grayscale only)
-- Fast inference time
-
-### Prediction Results - DIP Pipeline
-*[Placeholder: Add screenshot of DIP pipeline results with preprocessing steps]*
-
-**Shows:**
-- Tumor classification with enhanced accuracy
-- Confidence score
-- Step-by-step preprocessing visualization:
-  - Original → Grayscale → CLAHE → Gaussian Blur → Morphology
-- Detailed performance metrics
-
-### Side-by-Side Comparison
-*[Placeholder: Add screenshot of dual comparison view]*
-
-**Features:**
-- RAW vs DIP results displayed simultaneously
-- Accuracy comparison metrics
-- Processing time comparison
-- Visual preprocessing pipeline comparison
-
----
 
 ## 🔬 Research & Clinical Context
 
