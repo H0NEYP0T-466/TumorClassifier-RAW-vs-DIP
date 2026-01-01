@@ -55,7 +55,7 @@ A comprehensive full-stack machine learning application that compares the effect
 - [📖 Abstract](#-abstract)
 - [✨ Key Highlights](#-key-highlights)
 - [About the Project](#about-the-project)
-- [🏗️ Architecture](#️-architecture)
+- [🏗️ Architecture](#-architecture)
 - [✨ Features](#-features)
 - [🛠 Tech Stack](#-tech-stack)
 - [📦 Dependencies & Packages](#-dependencies--packages)
